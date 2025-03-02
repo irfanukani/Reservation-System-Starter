@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
 public class Customer {
 
     private String email;
@@ -24,32 +25,28 @@ public class Customer {
         if (!isOrderValid(passengerNames, flights)) {
             throw new IllegalStateException("Order is not valid");
         }
-        FlightOrder order = new FlightOrder(flights);
-        order.setCustomer(this);
+        FlightOrder order = new FlightOrder(flights, this);
         order.setPrice(price);
         List<Passenger> passengers = passengerNames
                 .stream()
                 .map(Passenger::new)
                 .collect(Collectors.toList());
         order.setPassengers(passengers);
-        order.getScheduledFlights().forEach(scheduledFlight -> scheduledFlight.addPassengers(passengers));
+        flights.forEach(scheduledFlight -> scheduledFlight.addPassengers(passengers));
         orders.add(order);
         return order;
     }
 
     private boolean isOrderValid(List<String> passengerNames, List<ScheduledFlight> flights) {
-        boolean valid = true;
-        valid = valid && !FlightOrder.getNoFlyList().contains(this.getName());
-        valid = valid && passengerNames.stream().noneMatch(passenger -> FlightOrder.getNoFlyList().contains(passenger));
-        valid = valid && flights.stream().allMatch(scheduledFlight -> {
-            try {
-                return scheduledFlight.getAvailableCapacity() >= passengerNames.size();
-            } catch (NoSuchFieldException e) {
-                e.printStackTrace();
-                return false;
-            }
+        if (FlightOrder.getNoFlyList().contains(this.getName())) {
+            return false;
+        }
+        if (passengerNames.stream().anyMatch(FlightOrder.getNoFlyList()::contains)) {
+            return false;
+        }
+        return flights.stream().allMatch(scheduledFlight -> {
+            return scheduledFlight.getAvailableCapacity() >= passengerNames.size();
         });
-        return valid;
     }
 
     public String getEmail() {
@@ -75,5 +72,4 @@ public class Customer {
     public void setOrders(List<Order> orders) {
         this.orders = orders;
     }
-
 }
